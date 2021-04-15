@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../static/css/android.css" />
+</head>
+
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=08124b72c34a9f80f54d3aab0645f817"></script>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=08124b72c34a9f80f54d3aab0645f817&plugin=AMap.DistrictSearch"></script>
+<script src="https://webapi.amap.com/ui/1.0/main.js"></script>
+<script src="https://cdn.bootcss.com/PapaParse/4.1.2/papaparse.min.js"></script>
+<script src="../static/js/jquery.js"></script>
+<script src="../static/js/echarts.min.js"></script>
+<script src="../static/js/china.js"></script>
+<script src="../static/js/flexible.js"></script>
+<script src="../static/js/world.js"></script>
+
+<body class="app">
+<div align="center">
+    <header>
+        <font class="title1">新型冠状病毒肺炎</font><br>
+        <font class="title2">全球可视化地图</font><br><hr/>
+        <font class="showTime">2020年4月1日</font>
+        <font class="data">数据来源于腾讯疫情</font>
+        <script>
+            var t = null;
+            t = setTimeout(time, 1000); //開始运行
+            function time() {
+                clearTimeout(t); //清除定时器
+                dt = new Date();
+                var y = dt.getFullYear();
+                var mt = dt.getMonth() + 1;
+                var day = dt.getDate();
+                //var h = dt.getHours(); //获取时
+                //var m = dt.getMinutes(); //获取分
+                //var s = dt.getSeconds(); //获取秒
+                document.querySelector(".showTime").innerHTML = y + "年" + mt + "月" + day+"日";
+                t = setTimeout(time, 1000); //设定定时器，循环运行
+            }
+        </script>
+    </header>
+</div>
+<div align="center" class="column">
+    <div class="map" id="chart-panel">
+        <div class="chart" id="map"></div>
+    </div>
+</div>
+<div align="center">
+    <div align="center" class="data">
+        <div class="datadiv">
+            <div class="dataclassdiv" style="background: #EEFFFF">
+                <h2>世界确诊</h2>
+                <h1 id="world_confirm" style="color:#ffcc66">2000000</h1>
+            </div>
+            <div class="dataclassdiv" style="background: #F5FFEE">
+                <h2>世界治愈</h2>
+                <h1 id="world_heal" style="color:#ff6633">2000000</h1>
+            </div>
+            <div class="dataclassdiv" style="background: #F8EEFF">
+                <h2>世界死亡</h2>
+                <h1 id="world_dead" style="color:#ffcc66">2000000</h1>
+            </div>
+        </div>
+        <div class="datadiv">
+            <div class="dataclassdiv" style="background: #F5FFEE">
+                <h2>中国确诊</h2>
+                <h1 id="confirm" style="color:#ffcc66">2000000</h1>
+            </div>
+            <div class="dataclassdiv" style="background: #FFEEF5">
+                <h2>中国治愈</h2>
+                <h1 id="heal" style="color:#ff6633">2000000</h1>
+            </div>
+            <div class="dataclassdiv" style="background: #EEFCFF">
+                <h2>中国死亡</h2>
+                <h1 id="dead" style="color:#ffcc66">2000000</h1>
+            </div>
+        </div>
+    </div>
+</div>
+<div></div>
+<div align="center">
+    <div class="from">
+        <div class="fromquery">
+            <font id="text" size="5px">from</font><input type="text" id="fromyear" class="date">年
+            <input type="text" id="frommounth" class="date">月
+            <input type="text" id="fromday" class="date">日
+            <font id="text" size="5px">to</font>
+            <input type="text" id="toyear" class="date">年
+            <input type="text" id="tomounth" class="date">月
+            <input type="text" id="today" class="date">日<br>
+            <input type="text" id="continent" class="area">地区
+            <input type="text" id="country" class="area">国家
+            <input type="text" id="province" class="area">省
+            <input type="text" id="city" class="area">市
+            <Button id="query2" >查询</Button>
+            <hr>
+            <div class="map-table">
+                <table>
+                    <thead>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+        function all(){
+            $.ajax({
+                url: "/all_world",
+                success: function (data) {},
+                error: function (xhr, type, errorThrown) {}
+            })
+        }
+        all()
+</script>
+<script>
+        var myChart_china = echarts.init(document.querySelector(".column .map .chart"));
+        function china_map(){
+            $('<div class="back">返回</div>').appendTo(
+                $('#map')
+            );
+
+            $('.back').css({
+            'position': 'absolute',
+            'left': '17px',
+            'top': '10px',
+            'color': 'rgb(222,222,222)',
+            'font-size': '15px',
+            'cursor': 'pointer',
+            'z-index': '100'
+        })
+
+            $('.back').click(function() {
+            if (parentInfo.length === 1) {
+                return;
+            }
+            parentInfo.pop()
+            getGeoJson(parentInfo[parentInfo.length - 1].code)
+        })
+            $('<div class="back_world">返回世界地图</div>').appendTo(
+                $('#map')
+            );
+            $('.back_world').css({
+            'position': 'absolute',
+            'right': '17px',
+            'top': '10px',
+            'color': 'rgb(222,222,222)',
+            'font-size': '15px',
+            'cursor': 'pointer',
+            'z-index': '100'
+        })
+            $('.back_world').click(function() {
+
+                world_map();
+                get_all_world_data();
+                onclick_world()
+            });
+            var parentJson = null
+            var parentInfo = [{
+                cityName: '全国',
+                level: 'china',
+                code: 100000
+            }]
+            var parent
+            getGeoJson(100000)
+
+            /**
+             * *  利用高德api获取行政区边界geoJson
+            *   adcode 行政区code 编号
+            **/
+
+            //此版本不再维护，准备在写另一个新版本
+
+             function getGeoJson(adcode) {
+            AMapUI.loadUI(['geo/DistrictExplorer'], DistrictExplorer => {
+                var districtExplorer = new DistrictExplorer()
+                districtExplorer.loadAreaNode(adcode, function(error, areaNode) {
+                    if (error) {
+                        console.error(error);
+                        return;
+                    }
+                    parent = areaNode;
+                    let Json = areaNode.getSubFeatures()
+                    if (Json.length > 0) {
+                        parentJson = Json
+                    } else if (Json.length === 0) {
+                        Json = parentJson.filter(item => {
+                            if (item.properties.adcode == adcode) {
+                                return item
+                            }
+                        })
+                        if (Json.length === 0) return
+                    }
+                    //去获取数据
+                    getMapData(Json)
+                });
+            })
+        }
+
+            //获取数据，这里我们用随机数模拟数据
+
+            function getMapData(Json) {
+            /*
+            let mapData = [{
+                    name: '广东省',
+                    value: 1000,
+                    cityCode: 440000,
+                    value2:200
+                }, {
+                    name: '湖南省',
+                    value: 2000,
+                    cityCode: 430000
+                }]*/
+            /*
+                全国：100000
+                北京：110000
+                天津：120000
+                河北：130000
+                山西：140000
+                内蒙古：150000
+                辽宁:210000
+                吉林：220000
+                黑龙江：230000
+                上海：310000
+                江苏：320000
+                浙江：330000
+                安徽：340000
+                福建：350000
+                江西：360000
+                山东：370000
+                河南：410000
+                湖北：420000
+                湖南：430000
+                广东：440000
+                广西：450000
+                海南：460000
+                重庆：500000
+                四川：510000
+                贵州：520000
+                云南：530000
+                西藏：540000
+                陕西：610000
+                甘肃：620000
+                青海：630000
+                宁夏：640000
+                新疆：650000
+                台湾：710000
+                香港：810000
+                澳门：820000
+            */
+            var mapData
+            $.ajax({
+                url:"/c2",
+                data: {name: parent.getName() },
+                success: function (data) {
+                    mapData=data.data;
+                    let pointData = Json.map(item => {
+                        return ({
+                            name: item.properties.name,
+                            value: ['118.83531246', '32.0267395887', Math.random() * 1000],
+                            cityCode: item.properties.adcode
+                        })
+                    })
+                    let mapJson = {}
+                    //geoJson必须这种格式
+                    mapJson.features = Json
+                    //去渲染echarts
+                    initEcharts(mapData, pointData, mapJson)
+                },
+                error: function (xhr, type, errorThrown) {
+                }
+            })
+            /*
+             mapData = Json.map(item => {
+                return ({
+                    name: item.properties.name,
+                    value: Math.random() * 100,
+                    level: item.properties.level,
+                    cityCode: item.properties.adcode
+                })
+            })*/
+        }
+
+            function initEcharts(mapData, pointData, mapJson) {
+            //注册
+            echarts.registerMap('Map', mapJson);
+
+            //这里加true是为了让地图重新绘制，不然如果你有筛选的时候地图会飞出去
+            myChart_china.setOption({
+
+                borderColor: "rgba(0, 0, 0, 0.5)",
+                // tooltip: {
+                //     trigger: "item",
+                //     formatter: p => {
+                //         let val = p.value;
+                //         if (window.isNaN(val)) {
+                //             val = 0;
+                //         }
+                //         let txtCon =
+                //             "<div style='text-align:center'>" + p.name + ":<br />台量：" + val.toFixed(2) + '</div>';
+                //         return txtCon;
+                //     }
+                // },
+                tooltip: {
+                    formatter: function(params, ticket, callback) {
+                        return params.data.name + "<br />" + "累计确诊" + "：" + params.data.value +
+                            "<br />" + "累计治愈" + "：" + params.data.heal + "<br />" + "累计死亡" + "：" + params.data.dead + "<br />" + "疑似病例：" + 0
+                    }
+                },
+                toolbox: {
+                    feature: {
+                        dataView: {
+                            show: false,
+                            readOnly: true
+                        },
+                        magicType: {
+                            show: false,
+                            type: ["line", "bar"]
+                        },
+                        restore: {
+                            show: false
+                        },
+                        saveAsImage: {
+                            show: true,
+                            name: parentInfo[parentInfo.length - 1].cityName + "地图",
+                            pixelRatio: 2
+                        }
+                    },
+                    iconStyle: {
+                        normal: {
+                            borderColor: "#41A7DE"
+                        }
+                    },
+                    itemSize: 15,
+                    top: 20,
+                    right: 22
+                },
+                visualMap: {
+                    left: 26,
+                    bottom: 20,
+                    showLabel: !0,
+                    text: ["高", "低"],
+                    textStyle: {
+                        fontSize: 12,
+                        color: "#fff"
+                    },
+                    pieces: [{
+                        max: 100,
+                        label: '<100',
+                        color: '#ffd768'
+                    }, {
+                        min: 100,
+                        max: 1000,
+                        label: '100-1000',
+                        color: '#ff8c71'
+                    }, {
+                        min: 1000,
+                        max: 10000,
+                        label: '1000-10000',
+                        color: '#ff5428'
+                    }, {
+                        min: 10000,
+                        label: '>10000',
+                        color: '#7f1100'
+                    }, ],
+                    color: '#fff',
+                    textStyle: {
+                        color: '#14224f',
+                    },
+                    show: !0
+                },
+
+                series: [{
+                    name: "地图",
+                    type: "map",
+                    map: "Map",
+                    roam: true, //是否可缩放
+                    zoom: 1.1, //缩放比例
+                    top: 40,
+                    data: mapData,
+                    itemStyle: {
+                        normal: {
+                            show: true,
+                            areaColor: '#2E98CA',
+                            borderColor: "rgba(0, 0, 0, 0.5)",
+                            borderWidth: '1',
+                        },
+                    },
+                    label: {
+
+                        normal: {
+                            show: true, //显示省份标签
+                            textStyle: {
+                                color: "#14224f", //省份标签字体颜色
+                                fontSize: 12
+                            },
+                            formatter: p => {
+                                let val = p.value;
+                                if (window.isNaN(val)) {
+                                    val = 0;
+                                }
+                                //
+                                switch (p.name) {
+                                    case '内蒙古自治区':
+                                        p.name = "内蒙古"
+                                        break;
+                                    case '西藏自治区':
+                                        p.name = "西藏"
+                                        break;
+                                    case '新疆维吾尔自治区':
+                                        p.name = "新疆"
+                                        break;
+                                    case '宁夏回族自治区':
+                                        p.name = "宁夏"
+                                        break;
+                                    case '广西壮族自治区':
+                                        p.name = "广西"
+                                        break;
+                                    case '香港特别行政区':
+                                        p.name = "香港"
+                                        break;
+                                    case '澳门特别行政区':
+                                        p.name = "澳门"
+                                        break;
+                                    default:
+                                        // code
+                                }
+                                if (p.name === "内蒙古自治区") {
+                                    p.name = "内蒙古";
+                                }
+                                let txtCon =
+                                    p.name;
+                                return txtCon;
+                            }
+                        },
+                        emphasis: {
+                            //对应的鼠标悬浮效果
+                            show: true,
+                            textStyle: {
+                                color: "#000"
+                            }
+                        }
+                    }
+                }, {
+                    name: '散点',
+                    type: 'effectScatter',
+                    coordinateSystem: 'geo',
+                    rippleEffect: {
+                        brushType: 'fill'
+                    },
+                    itemStyle: {
+                        normal: {
+                            borderColor: "rgba(0, 0, 0, 0.5)"
+                        }
+                    },
+                    data: pointData,
+                    symbolSize: 8,
+                    showEffectOn: 'render', //加载完毕显示特效
+                }, ]
+
+            }, true)
+
+            //点击前解绑，防止点击事件触发多次
+            myChart_china.off('click');
+            myChart_china.on('click', echartsMapClick);
+
+            window.addEventListener("resize", function() {
+                myChart_china.resize();
+            });
+        }
+
+            //echarts点击事件
+
+            function echartsMapClick(params) {
+            //如果当前是最后一级，那就直接return
+            if (parentInfo[parentInfo.length - 1].code == params.data.cityCode) {
+                return
+            }
+            let data = params.data
+            parentInfo.push({
+                cityName: data.name,
+                level: data.level,
+                code: data.cityCode
+            })
+            getGeoJson(data.cityCode)
+
+        }
+        }
+</script>
+<script>
+       /*
+          "Afghanistan": "阿富汗",
+          "Angola": "安哥拉",
+          "Albania": "阿尔巴尼亚",
+          "United Arab Emirates": "阿联酋",
+          "Argentina": "阿根廷",
+          "Armenia": "亚美尼亚",
+          "French Southern and Antarctic Lands": "法属南半球和南极领地",
+          "Australia": "澳大利亚",
+          "Austria": "奥地利",
+          "Azerbaijan": "阿塞拜疆",
+          "Burundi": "布隆迪",
+          "Belgium": "比利时",
+          "Benin": "贝宁",
+          "Burkina Faso": "布基纳法索",
+          "Bangladesh": "孟加拉国",
+          "Bulgaria": "保加利亚",
+          "The Bahamas": "巴哈马",
+          "Bosnia and Herzegovina": "波黑",
+          "Belarus": "白俄罗斯",
+          "Belize": "伯利兹",
+          "Bermuda": "百慕大",
+          "Bolivia": "玻利维亚",
+          "Brazil": "巴西",
+          "Brunei": "文莱",
+          "Bhutan": "不丹",
+          "Botswana": "博茨瓦纳",
+          "Central African Republic": "中非共和国",
+          "Canada": "加拿大",
+          "Switzerland": "瑞士",
+          "Chile": "智利",
+          "China": "中国",
+          "Ivory Coast": "象牙海岸",
+          "Cameroon": "喀麦隆",
+          "Democratic Republic of the Congo": "刚果（金）",
+          "Republic of the Congo": "刚果（布）",
+          "Colombia": "哥伦比亚",
+          "Costa Rica": "哥斯达黎加",
+          "Cuba": "古巴",
+          "Northern Cyprus": "北塞浦路斯",
+          "Cyprus": "塞浦路斯",
+          "Czech Republic": "捷克",
+          "Germany": "德国",
+          "Djibouti": "吉布提",
+          "Denmark": "丹麦",
+          "Dominican Republic": "多米尼加共和国",
+          "Algeria": "阿尔及利亚",
+          "Ecuador": "厄瓜多尔",
+          "Egypt": "埃及",
+          "Eritrea": "厄立特里亚",
+          "Spain": "西班牙",
+          "Estonia": "爱沙尼亚",
+          "Ethiopia": "埃塞俄比亚",
+          "Finland": "芬兰",
+          "Fiji": "斐",
+          "Falkland Islands": "福克兰群岛",
+          "France": "法国",
+          "Gabon": "加蓬",
+          "United Kingdom": "英国",
+          "Georgia": "格鲁吉亚",
+          "Ghana": "加纳",
+          "Guinea": "几内亚",
+          "Gambia": "冈比亚",
+          "Guinea Bissau": "几内亚比绍",
+          "Equatorial Guinea": "赤道几内亚",
+          "Greece": "希腊",
+          "Greenland": "格陵兰",
+          "Guatemala": "危地马拉",
+          "French Guiana": "法属圭亚那",
+          "Guyana": "圭亚那",
+          "Honduras": "洪都拉斯",
+          "Croatia": "克罗地亚",
+          "Haiti": "海地",
+          "Hungary": "匈牙利",
+          "Indonesia": "印度尼西亚",
+          "India": "印度",
+          "Ireland": "爱尔兰",
+          "Iran": "伊朗",
+          "Iraq": "伊拉克",
+          "Iceland": "冰岛",
+          "Israel": "以色列",
+          "Italy": "意大利",
+          "Jamaica": "牙买加",
+          "Jordan": "约旦",
+          "Japan": "日本",
+          "Kazakhstan": "哈萨克斯坦",
+          "Kenya": "肯尼亚",
+          "Kyrgyzstan": "吉尔吉斯斯坦",
+          "Cambodia": "柬埔寨",
+          "South Korea": "韩国",
+          "Kosovo": "科索沃",
+          "Kuwait": "科威特",
+          "Laos": "老挝",
+          "Lebanon": "黎巴嫩",
+          "Liberia": "利比里亚",
+          "Libya": "利比亚",
+          "Sri Lanka": "斯里兰卡",
+          "Lesotho": "莱索托",
+          "Lithuania": "立陶宛",
+          "Luxembourg": "卢森堡",
+          "Latvia": "拉脱维亚",
+          "Morocco": "摩洛哥",
+          "Moldova": "摩尔多瓦",
+          "Madagascar": "马达加斯加",
+          "Mexico": "墨西哥",
+          "Macedonia": "马其顿",
+          "Mali": "马里",
+          "Myanmar": "缅甸",
+          "Montenegro": "黑山",
+          "Mongolia": "蒙古",
+          "Mozambique": "莫桑比克",
+          "Mauritania": "毛里塔尼亚",
+          "Malawi": "马拉维",
+          "Malaysia": "马来西亚",
+          "Namibia": "纳米比亚",
+          "New Caledonia": "新喀里多尼亚",
+          "Niger": "尼日尔",
+          "Nigeria": "尼日利亚",
+          "Nicaragua": "尼加拉瓜",
+          "Netherlands": "荷兰",
+          "Norway": "挪威",
+          "Nepal": "尼泊尔",
+          "New Zealand": "新西兰",
+          "Oman": "阿曼",
+          "Pakistan": "巴基斯坦",
+          "Panama": "巴拿马",
+          "Peru": "秘鲁",
+          "Philippines": "菲律宾",
+          "Papua New Guinea": "巴布亚新几内亚",
+          "Poland": "波兰",
+          "Puerto Rico": "波多黎各",
+          "North Korea": "朝鲜",
+          "Portugal": "葡萄牙",
+          "Paraguay": "巴拉圭",
+          "Qatar": "卡塔尔",
+          "Romania": "罗马尼亚",
+          "Russia": "俄罗斯",
+          "Rwanda": "卢旺达",
+          "Western Sahara": "西撒哈拉",
+          "Saudi Arabia": "沙特阿拉伯",
+          "Sudan": "苏丹",
+          "South Sudan": "南苏丹",
+          "Senegal": "塞内加尔",
+          "Solomon Islands": "所罗门群岛",
+          "Sierra Leone": "塞拉利昂",
+          "El Salvador": "萨尔瓦多",
+          "Somaliland": "索马里兰",
+          "Somalia": "索马里",
+          "Republic of Serbia": "塞尔维亚",
+          "Suriname": "苏里南",
+          "Slovakia": "斯洛伐克",
+          "Slovenia": "斯洛文尼亚",
+          "Sweden": "瑞典",
+          "Swaziland": "斯威士兰",
+          "Syria": "叙利亚",
+          "Chad": "乍得",
+          "Togo": "多哥",
+          "Thailand": "泰国",
+          "Tajikistan": "塔吉克斯坦",
+          "Turkmenistan": "土库曼斯坦",
+          "East Timor": "东帝汶",
+          "Trinidad and Tobago": "特里尼达和多巴哥",
+          "Tunisia": "突尼斯",
+          "Turkey": "土耳其",
+          "United Republic of Tanzania": "坦桑尼亚",
+          "Uganda": "乌干达",
+          "Ukraine": "乌克兰",
+          "Uruguay": "乌拉圭",
+          "United States of America": "美国",
+          "Uzbekistan": "乌兹别克斯坦",
+          "Venezuela": "委内瑞拉",
+          "Vietnam": "越南",
+          "Vanuatu": "瓦努阿图",
+          "West Bank": "西岸",
+          "Yemen": "也门",
+          "South Africa": "南非",
+          "Zambia": "赞比亚",
+          "Zimbabwe": "津巴布韦",
+          "Singapore Rep.": "新加坡",
+          "Dominican Rep.": "多米尼加",
+          "Palestine": "巴勒斯坦",
+          "Bahamas": "巴哈马",
+          "Timor-Leste": "东帝汶",
+          "Guinea-Bissau": "几内亚比绍",
+          "Côte d'Ivoire": "科特迪瓦",
+          "Siachen Glacier": "锡亚琴冰川",
+          "Br. Indian Ocean Ter.": "英属印度洋领土",
+          "Bosnia and Herz.": "波斯尼亚和黑塞哥维那",
+          "Central African Rep.": "中非",
+          "Dem. Rep. Congo": "刚果民主共和国",
+          "Congo": "刚果",
+          "N. Cyprus": "北塞浦路斯",
+          "Czech Rep.": "捷克",
+          "Eq. Guinea": "赤道几内亚",
+          "Korea": "韩国",
+          "Lao PDR": "老挝",
+          "Dem. Rep. Korea": "朝鲜",
+          "W. Sahara": "西撒哈拉",
+          "S. Sudan": "南苏丹",
+          "Solomon Is.": "所罗门群岛",
+          "Serbia": "塞尔维亚",
+          "Tanzania": "坦桑尼亚",
+          "United States": "美国"
+       */
+       var myChart;
+        //注册
+        //这里加true是为了让地图重新绘制，不然如果你有筛选的时候地图会飞出去
+       function world_map() {
+           myChart= echarts.init(document.querySelector(".column .map .chart"));
+           option = {
+            tooltip: {
+                trigger: 'item',
+                formatter: function(params, ticket, callback) {
+                        return params.data.name + "<br />" + "累计确诊" + "：" + params.data.value +
+                            "<br />" + "累计治愈" + "：" + params.data.heal + "<br />" + "累计死亡" + "：" + params.data.dead
+                }
+            },
+            dataRange: {
+                left: 26,
+                bottom: 20,
+                min: 0,
+                max: 2500000,
+                text: ['High', 'Low'],
+                realtime: false,
+                calculable: true,
+                color: ['orangered', 'yellow', 'lightskyblue']
+            },
+            series: [{
+                name: 'World Population (2010)',
+                type: 'map',
+                mapType: 'world',
+                roam: true,
+                zoom: 1.5, //缩放比例
+                top: 158,
+                mapLocation: {
+                    y: 100
+                },
+                itemStyle: {
+                    emphasis: {
+                        label: {
+                            show: true
+                        }
+                    }
+                },
+                data: [
+                ]
+            }]
+        };
+        myChart.setOption(option,true);
+        window.addEventListener("resize", function() {
+            myChart.resize();
+        });
+       }
+       world_map()
+       get_all_world_data();
+</script>
+<script>
+    var btn = document.getElementById("query2");
+    btn.onclick = function() {
+        var fromyear = document.getElementById("fromyear").value;
+        var fromday = document.getElementById("fromday").value;
+        var frommounth = document.getElementById("frommounth").value;
+        var toyear = document.getElementById("toyear").value;
+        var today = document.getElementById("today").value;
+        var tomounth = document.getElementById("tomounth").value;
+        var continent = document.getElementById("continent").value;
+        var country = document.getElementById("country").value;
+        var province = document.getElementById("province").value;
+        var city = document.getElementById("city").value;
+        $.ajax({
+            url: "/query2",
+            data: {
+                fromyear: fromyear, fromday: fromday, frommounth: frommounth,
+                toyear: toyear, today: today, tomounth: tomounth,
+                continent: continent, country: country, province: province, city: city
+            },
+            success: function (data) {
+                if (province != "" || city != "" || country == "中国") {
+                    if (city != "" || province != "") {
+                        appendHtmlHead = "<tr><th>日期</th>" +
+                            "<th>省份</th>" +
+                            "<th>市区</th>" +
+                            "<th>累计确诊</th>" +
+                            "<th>累计治愈</th>" +
+                            "<th>累计死亡</th>" +
+                            "<th>现有确诊</th><tr>"
+                        $(".map-table thead").empty();
+                        $(".map-table thead").append(appendHtmlHead);
+                        $(".map-table tbody").empty();
+                        for (var i = 0; i < data.data.length; i++) {
+                            var Day = data.data[i][0].split(' ')
+                            appendHtmlBody = "<tr><td>" +
+                                Day[3] + Day[2] + Day[1] + "</td><td>" +
+                                data.data[i][1] + "</td><td>" +
+                                data.data[i][2] + "</td><td>" +
+                                data.data[i][3] + "</td><td>" +
+                                data.data[i][4] + "</td><td>" +
+                                data.data[i][5] + "</td><td>" +
+                                (data.data[i][3] - data.data[i][4] - data.data[i][5]) + "</td><tr>"
+                            $(".map-table tbody").append(appendHtmlBody);
+                        }
+                    }
+                    if (country == "中国" && province == "" && city == "") {
+                        appendHtmlHead = "<tr><th>日期</th>" +
+                            "<th>省份</th>" +
+                            "<th>累计确诊</th>" +
+                            "<th>累计治愈</th>" +
+                            "<th>累计死亡</th>" +
+                            "<th>现有确诊</th></tr>"
+                        $(".map-table thead").empty();
+                        $(".map-table thead").append(appendHtmlHead);
+                        $(".map-table tbody").empty();
+                           for (var i = 0; i < data.data.length; i++) {
+                               var Day = data.data[i][0].split(' ')
+                               appendHtmlBody = "<tr><td>" +
+                                   Day[3] + Day[2] + Day[1] + "</td><td>" +
+                                   data.data[i][1] + "</td><td>" +
+                                   data.data[i][2] + "</td><td>" +
+                                   data.data[i][3] + "</td><td>" +
+                                   data.data[i][4] + "</td><td>" +
+                                   (data.data[i][2] - data.data[i][3] - data.data[i][4]) + "</td></tr>"
+                               $(".map-table tbody").append(appendHtmlBody);
+                           }
+                    }
+                }
+                if (province == "" && city == "" && country != "中国") {
+                    appendHtmlHead = "<tr><th>日期</th>" +
+                        "<th>国家</th>" +
+                        "<th>累计确诊</th>" +
+                        "<th>累计治愈</th>" +
+                        "<th>累计死亡</th>" +
+                        "<th>现有确诊</th></tr>"
+                    $(".map-table thead").empty();
+                    $(".map-table thead").append(appendHtmlHead);
+                    $(".map-table tbody").empty();
+                    for (var i = 0; i < data.data.length; i++) {
+                        var Day = data.data[i][0].split(' ')
+                        appendHtmlBody = "<tr><td>" +
+                            Day[3] + Day[2] + Day[1] + "</td><td>" +
+                            data.data[i][1] + "</td><td>" +
+                            data.data[i][2] + "</td><td>" +
+                            data.data[i][3] + "</td><td>" +
+                            data.data[i][4] + "</td><td>" +
+                            data.data[i][5] + "</td></tr>"
+                        $(".map-table tbody").append(appendHtmlBody);
+                    }
+                }
+                if (data.data == "") {
+                    alert("暂无数据")
+                }
+                $(".map-table tbody").find('tr').on('mouseenter',function(){
+                    var hang = $(this).prevAll().length;
+                    if(province != "" || city != "" || country == "中国"){
+                           myChart.dispatchAction({ type: 'highlight', name:add_name(data.data[hang][1])});
+                    }
+                    if(province == "" && city == "" && country != "中国"){
+                        myChart.dispatchAction({ type: 'highlight', name:trans_world(data.data[hang][1])});
+                    }
+                    //选中高亮
+                })
+                // 鼠标移出的第几行数据
+                $(".map-table tbody").find('tr').on('mouseleave',function(){
+                    var hang = $(this).prevAll().length;
+                    if(province != "" || city != "" || country == "中国"){
+                        myChart.dispatchAction({ type: 'downplay', name:add_name(data.data[hang][1])});
+                    }
+                    if(province == "" && city == "" && country != "中国"){
+                        myChart.dispatchAction({ type: 'downplay', name:trans_world(data.data[hang][1])});
+                    }
+                    //取消高亮
+                })
+                myChart.on('mouseOver', function(params){
+                    console.log(params);//此处写点击事件内容
+                    if(province != "" || city != "" || country == "中国") {
+                        for(var i=0;i<data.data.length;i++){
+                            // data11[i].value="0";
+                            if(del_name(params.name) == data.data[i][1]){
+                                console.log(params.name);
+                                //addressList[i].value="1";
+                                // 选中高亮
+                                myChart.dispatchAction({ type: 'highlight', name:params.name});
+                                $(".map-table tbody tr").eq(i).addClass('highTr');
+                            }
+                        }
+                    }
+                    if(province == "" && city == "" && country != "中国") {
+                        for(var i=0;i<data.data.length;i++){
+                            // data11[i].value="0";
+                            if(del_world(params.name) == data.data[i][1]){
+                                console.log(params.name);
+                                //addressList[i].value="1";
+                                // 选中高亮
+                                myChart.dispatchAction({ type: 'highlight', name:params.name});
+                                $(".map-table tbody tr").eq(i).addClass('highTr');
+                            }
+                        }
+                    }
+                });
+                    //  移出该区域时，取消高亮
+                myChart.on('mouseOut', function(params){
+                    console.log(params);//此处写点击事件内容
+                    if(province != "" || city != "" || country == "中国") {
+                        for(var i=0;i<data.data.length;i++){
+                            // data11[i].value="0";
+                            if(del_name(params.name) == data.data[i][1]){
+                                console.log(params.name);
+                                //取消高亮
+                                myChart.dispatchAction({ type: 'downplay', name:params.name});
+                                $(".map-table tbody tr").eq(i).removeClass('highTr');
+                            }
+                        }
+                    }
+                    if(province == "" && city == "" && country != "中国") {
+                        for(var i=0;i<data.data.length;i++){
+                            // data11[i].value="0";
+                            if(del_world(params.name) == data.data[i][1]){
+                                console.log(params.name);
+                                //addressList[i].value="1";
+                                // 选中高亮
+                                myChart.dispatchAction({ type: 'downplay', name:params.name});
+                                $(".map-table tbody tr").eq(i).removeClass('highTr');
+                            }
+                        }
+                    }
+                });
+            },
+            error: function (xhr, type, errorThrown) {
+            }
+        })
+    }
+    function onclick_world(){
+        myChart.on('click',function(params){
+            if(params.name=="China"){
+                china_map();
+            }
+        })
+    }
+    function get_all_world_data(){
+        $.ajax({
+            url: "/all_world_data",
+            success: function (data) {
+                option.series[0].data=data.data;
+                myChart.setOption(option);
+            },
+            error: function (xhr, type, errorThrown) {
+            }
+        })
+    }
+    function get_c1_data() {
+            $.ajax({
+                url:"/c1",
+                success:function(data){
+                    $("#confirm").text(data.confirm);
+                    $("#dead").text(data.dead);
+                    $("#heal").text(data.heal);
+                },
+                error:function (xhr,type,errorThrown){
+
+                }
+            })
+        }
+    function get_world_c1_data() {
+        $.ajax({
+            url:"/world_c1",
+            success:function(data){
+                $("#world_confirm").text(data.confirm);
+                $("#world_dead").text(data.dead);
+                $("#world_heal").text(data.heal);
+            },
+            error:function (xhr,type,errorThrown){
+
+            }
+        })
+    }
+    get_all_world_data()
+    onclick_world()
+    get_world_c1_data()
+    get_c1_data()
+</script>
+</body>
+</html>

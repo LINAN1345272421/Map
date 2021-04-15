@@ -1,0 +1,81 @@
+.app{
+    text-align:center;
+}
+header{
+    text-align: center;
+    height: 160px;
+    width: 700px;
+    background-size: 100% 100%;
+    background: #d7f7fa;
+}
+header .title1{
+    font-size: 40px;
+    color: #ffcc66;
+}
+header .title2{
+    font-size: 50px;
+    color: #14224f;
+}
+.data .datadiv{
+    width: 700px;
+}
+.data .datadiv .dataclassdiv{
+    width: 226px;
+    float: left;
+    margin-left: 5px;
+    margin-top: 5px;
+}
+.column{
+    height: 600px;
+}
+.column .map{
+    width: 700px;
+    height: 600px;
+}
+.column .map .chart{
+    width: 700px;
+    height: 600px;
+}
+.from{
+     width: 700px;
+}
+.from .fromquery{
+    z-index:3;
+}
+
+.from .fromquery .date {
+    background: #d7f7fa;
+    padding: 1px;
+    width: 40px;
+    font-size: 15px;
+    font-weight: 300;
+}
+
+.from .fromquery .area {
+    background: #d7f7fa;
+    padding: 1px;
+    width: 80px;
+    font-size: 15px;
+    font-weight: 300;
+}
+
+table {
+    border-collapse: collapse;
+    margin: 0 auto;
+    text-align: center;
+}
+table td, table th {
+    border: 1px solid #cad9ea;
+    color: #666;
+    height: 30px;
+}
+table thead tr th {
+    background-color: #CCE8EB;
+    width: 100px;
+}
+table tr:nth-child(odd) {
+    background: #fff;
+}
+table tr:nth-child(even) {
+    background: #F5FAFA;
+}

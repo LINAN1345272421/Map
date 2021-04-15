@@ -1,0 +1,2320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="../static/css/index2.css" />
+</head>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=08124b72c34a9f80f54d3aab0645f817"></script>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=08124b72c34a9f80f54d3aab0645f817&plugin=AMap.DistrictSearch"></script>
+<script src="https://webapi.amap.com/ui/1.0/main.js"></script>
+<script src="https://cdn.bootcss.com/PapaParse/4.1.2/papaparse.min.js"></script>
+<script src="../static/js/jquery.js"></script>
+<script src="../static/js/echarts.min.js"></script>
+<script src="../static/js/china.js"></script>
+<script src="../static/js/flexible.js"></script>
+<script src="../static/js/world.js"></script>
+
+<body>
+    <header>
+        <font>全球疫情统计可视化地图</font>
+        <font class="showTime">2020年3月17-0时54分14秒</font>
+        <font class="data">数据来源于腾讯疫情</font>
+        <script>
+            var t = null;
+            t = setTimeout(time, 1000); //開始运行
+            function time() {
+                clearTimeout(t); //清除定时器
+                dt = new Date();
+                var y = dt.getFullYear();
+                var mt = dt.getMonth() + 1;
+                var day = dt.getDate();
+                var h = dt.getHours(); //获取时
+                var m = dt.getMinutes(); //获取分
+                var s = dt.getSeconds(); //获取秒
+                document.querySelector(".showTime").innerHTML = y + "年" + mt + "月" + day + "-" + h + "时" + m + "分" + s + "秒";
+                t = setTimeout(time, 1000); //设定定时器，循环运行
+            }
+        </script>
+    </header>
+    <section class="mainbox">
+        <div class="column" align="center">
+            <h3 align="left">疫情数据</h3>
+            <br>
+            <hr/>
+            <h4 align="left">世界：</h4>
+            <br>
+            <h2>现有确诊</h2>
+            <h1 id="world_now" style="color:#ff6633">2000000</h1>
+            <br>
+            <h2>累计确诊</h2>
+            <h1 id="world_confirm" style="color:#ffcc66">2000000</h1>
+            <br>
+            <h2>累计治愈</h2>
+            <h1 id="world_heal" style="color:#ff6633">2000000</h1>
+            <br>
+            <h2>累计死亡</h2>
+            <h1 id="world_dead" style="color:#ffcc66">2000000</h1>
+            <br>
+            <hr/>
+            <h4 align="left">中国：</h4>
+            <br>
+            <h2>累计确诊</h2>
+            <h1 id="main_confirm" style="color:#ff6633">2000000</h1>
+            <br>
+            <h2>累计治愈</h2>
+            <h1 id="main_heal" style="color:#ffcc66">2000000</h1>
+            <br>
+            <h2>累计死亡</h2>
+            <h1 id="main_dead" style="color:#ff6633">2000000</h1>
+            <br>
+            <h2>现有确诊</h2>
+            <h1 id="main_now" style="color:#ffcc66">2000000</h1>
+            <br>
+        </div>
+        <div class="column" id="map">
+            <div class="map" id="chart-panel">
+                <div class="chart"></div>
+            </div>
+            <div class="bar"></div>
+        </div>
+        <div class="column2">
+            <font id="text">from</font><input type="text" id="fromyear" class="date">年
+            <input type="text" id="frommounth" class="date">月
+            <input type="text" id="fromday" class="date">日
+            <font id="text">to</font>
+            <input type="text" id="toyear" class="date">年
+            <input type="text" id="tomounth" class="date">月
+            <input type="text" id="today" class="date">日<br>
+            <input type="text" id="continent" class="area">地区
+            <input type="text" id="country" class="area">国家
+            <input type="text" id="province" class="area">省
+            <input type="text" id="city" class="area">市
+            <Button id="query2" >查询</Button>
+            <hr>
+            <div class="map-table">
+                <table>
+                    <thead>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+       </div>
+    </section>
+    <script>
+        function all(){
+            $.ajax({
+                url: "/all_world",
+                success: function (data) {},
+                error: function (xhr, type, errorThrown) {}
+            })
+        }
+        //all()
+    </script>
+    <script>
+        var myChart_china = echarts.init(document.querySelector(".column .map .chart"));
+        function china_map(){
+            $('<div class="back">返回</div>').appendTo(
+                $('#chart-panel')
+            );
+
+            $('.back').css({
+            'position': 'absolute',
+            'left': '17px',
+            'top': '25px',
+            'color': 'rgb(222,222,222)',
+            'font-size': '15px',
+            'cursor': 'pointer',
+            'z-index': '100'
+        })
+
+            $('.back').click(function() {
+            if (parentInfo.length === 1) {
+                return;
+            }
+            parentInfo.pop()
+            getGeoJson(parentInfo[parentInfo.length - 1].code)
+        })
+            $('<div class="back_world">返回世界地图</div>').appendTo(
+                $('#chart-panel')
+            );
+            $('.back_world').css({
+            'position': 'absolute',
+            'right': '17px',
+            'top': '25px',
+            'color': 'rgb(222,222,222)',
+            'font-size': '15px',
+            'cursor': 'pointer',
+            'z-index': '100'
+        })
+            $('.back_world').click(function() {
+
+                world_map();
+                get_all_world_data();
+                onclick_world()
+            });
+            var parentJson = null
+            var parentInfo = [{
+                cityName: '全国',
+                level: 'china',
+                code: 100000
+            }]
+            var parent
+            getGeoJson(100000)
+
+            /**
+             * *  利用高德api获取行政区边界geoJson
+            *   adcode 行政区code 编号
+            **/
+
+            //此版本不再维护，准备在写另一个新版本
+
+             function getGeoJson(adcode) {
+            AMapUI.loadUI(['geo/DistrictExplorer'], DistrictExplorer => {
+                var districtExplorer = new DistrictExplorer()
+                districtExplorer.loadAreaNode(adcode, function(error, areaNode) {
+                    if (error) {
+                        console.error(error);
+                        return;
+                    }
+                    parent = areaNode;
+                    let Json = areaNode.getSubFeatures()
+                    if (Json.length > 0) {
+                        parentJson = Json
+                    } else if (Json.length === 0) {
+                        Json = parentJson.filter(item => {
+                            if (item.properties.adcode == adcode) {
+                                return item
+                            }
+                        })
+                        if (Json.length === 0) return
+                    }
+                    //去获取数据
+                    getMapData(Json)
+                });
+            })
+        }
+
+            //获取数据，这里我们用随机数模拟数据
+
+            function getMapData(Json) {
+            /*
+            let mapData = [{
+                    name: '广东省',
+                    value: 1000,
+                    cityCode: 440000,
+                    value2:200
+                }, {
+                    name: '湖南省',
+                    value: 2000,
+                    cityCode: 430000
+                }]*/
+            /*
+                全国：100000
+                北京：110000
+                天津：120000
+                河北：130000
+                山西：140000
+                内蒙古：150000
+                辽宁:210000
+                吉林：220000
+                黑龙江：230000
+                上海：310000
+                江苏：320000
+                浙江：330000
+                安徽：340000
+                福建：350000
+                江西：360000
+                山东：370000
+                河南：410000
+                湖北：420000
+                湖南：430000
+                广东：440000
+                广西：450000
+                海南：460000
+                重庆：500000
+                四川：510000
+                贵州：520000
+                云南：530000
+                西藏：540000
+                陕西：610000
+                甘肃：620000
+                青海：630000
+                宁夏：640000
+                新疆：650000
+                台湾：710000
+                香港：810000
+                澳门：820000
+            */
+            var mapData
+            $.ajax({
+                url:"/c2",
+                data: {name: parent.getName() },
+                success: function (data) {
+                    mapData=data.data;
+                    let pointData = Json.map(item => {
+                        return ({
+                            name: item.properties.name,
+                            value: ['118.83531246', '32.0267395887', Math.random() * 1000],
+                            cityCode: item.properties.adcode
+                        })
+                    })
+                    let mapJson = {}
+                    //geoJson必须这种格式
+                    mapJson.features = Json
+                    //去渲染echarts
+                    initEcharts(mapData, pointData, mapJson)
+                },
+                error: function (xhr, type, errorThrown) {
+                }
+            })
+            /*
+             mapData = Json.map(item => {
+                return ({
+                    name: item.properties.name,
+                    value: Math.random() * 100,
+                    level: item.properties.level,
+                    cityCode: item.properties.adcode
+                })
+            })*/
+        }
+
+            function initEcharts(mapData, pointData, mapJson) {
+            //注册
+            echarts.registerMap('Map', mapJson);
+
+            //这里加true是为了让地图重新绘制，不然如果你有筛选的时候地图会飞出去
+            myChart_china.setOption({
+
+                borderColor: "rgba(0, 0, 0, 0.5)",
+                // tooltip: {
+                //     trigger: "item",
+                //     formatter: p => {
+                //         let val = p.value;
+                //         if (window.isNaN(val)) {
+                //             val = 0;
+                //         }
+                //         let txtCon =
+                //             "<div style='text-align:center'>" + p.name + ":<br />台量：" + val.toFixed(2) + '</div>';
+                //         return txtCon;
+                //     }
+                // },
+                tooltip: {
+                    formatter: function(params, ticket, callback) {
+                        return params.data.name + "<br />" + "累计确诊" + "：" + params.data.value +
+                            "<br />" + "累计治愈" + "：" + params.data.heal + "<br />" + "累计死亡" + "：" + params.data.dead + "<br />" + "疑似病例：" + 0
+                    }
+                },
+                toolbox: {
+                    feature: {
+                        dataView: {
+                            show: false,
+                            readOnly: true
+                        },
+                        magicType: {
+                            show: false,
+                            type: ["line", "bar"]
+                        },
+                        restore: {
+                            show: false
+                        },
+                        saveAsImage: {
+                            show: true,
+                            name: parentInfo[parentInfo.length - 1].cityName + "地图",
+                            pixelRatio: 2
+                        }
+                    },
+                    iconStyle: {
+                        normal: {
+                            borderColor: "#41A7DE"
+                        }
+                    },
+                    itemSize: 15,
+                    top: 20,
+                    right: 22
+                },
+                visualMap: {
+                    left: 26,
+                    bottom: 280,
+                    showLabel: !0,
+                    text: ["高", "低"],
+                    textStyle: {
+                        fontSize: 12,
+                        color: "#fff"
+                    },
+                    pieces: [{
+                        max: 100,
+                        label: '<100',
+                        color: '#ffd768'
+                    }, {
+                        min: 100,
+                        max: 1000,
+                        label: '100-1000',
+                        color: '#ff8c71'
+                    }, {
+                        min: 1000,
+                        max: 10000,
+                        label: '1000-10000',
+                        color: '#ff5428'
+                    }, {
+                        min: 10000,
+                        label: '>10000',
+                        color: '#7f1100'
+                    }, ],
+                    color: '#fff',
+                    textStyle: {
+                        color: '#14224f',
+                    },
+                    show: !0
+                },
+
+                series: [{
+                    name: "地图",
+                    type: "map",
+                    map: "Map",
+                    roam: true, //是否可缩放
+                    zoom: 0.9, //缩放比例
+                    top: 0,
+                    data: mapData,
+                    itemStyle: {
+                        normal: {
+                            show: true,
+                            areaColor: '#2E98CA',
+                            borderColor: "rgba(0, 0, 0, 0.5)",
+                            borderWidth: '1',
+                        },
+                    },
+                    label: {
+
+                        normal: {
+                            show: true, //显示省份标签
+                            textStyle: {
+                                color: "#14224f", //省份标签字体颜色
+                                fontSize: 12
+                            },
+                            formatter: p => {
+                                let val = p.value;
+                                if (window.isNaN(val)) {
+                                    val = 0;
+                                }
+                                //
+                                switch (p.name) {
+                                    case '内蒙古自治区':
+                                        p.name = "内蒙古"
+                                        break;
+                                    case '西藏自治区':
+                                        p.name = "西藏"
+                                        break;
+                                    case '新疆维吾尔自治区':
+                                        p.name = "新疆"
+                                        break;
+                                    case '宁夏回族自治区':
+                                        p.name = "宁夏"
+                                        break;
+                                    case '广西壮族自治区':
+                                        p.name = "广西"
+                                        break;
+                                    case '香港特别行政区':
+                                        p.name = "香港"
+                                        break;
+                                    case '澳门特别行政区':
+                                        p.name = "澳门"
+                                        break;
+                                    default:
+                                        // code
+                                }
+                                if (p.name === "内蒙古自治区") {
+                                    p.name = "内蒙古";
+                                }
+                                let txtCon =
+                                    p.name;
+                                return txtCon;
+                            }
+                        },
+                        emphasis: {
+                            //对应的鼠标悬浮效果
+                            show: true,
+                            textStyle: {
+                                color: "#000"
+                            }
+                        }
+                    }
+                }, {
+                    name: '散点',
+                    type: 'effectScatter',
+                    coordinateSystem: 'geo',
+                    rippleEffect: {
+                        brushType: 'fill'
+                    },
+                    itemStyle: {
+                        normal: {
+                            borderColor: "rgba(0, 0, 0, 0.5)"
+                        }
+                    },
+                    data: pointData,
+                    symbolSize: 8,
+                    showEffectOn: 'render', //加载完毕显示特效
+                }, ]
+
+            }, true)
+
+            //点击前解绑，防止点击事件触发多次
+            myChart_china.off('click');
+            myChart_china.on('click', echartsMapClick);
+
+            window.addEventListener("resize", function() {
+                myChart_china.resize();
+            });
+        }
+
+            //echarts点击事件
+
+            function echartsMapClick(params) {
+            //如果当前是最后一级，那就直接return
+            if (parentInfo[parentInfo.length - 1].code == params.data.cityCode) {
+                return
+            }
+            let data = params.data
+            parentInfo.push({
+                cityName: data.name,
+                level: data.level,
+                code: data.cityCode
+            })
+            getGeoJson(data.cityCode)
+
+        }
+        }
+    </script>
+    <script>
+       /*
+          "Afghanistan": "阿富汗",
+          "Angola": "安哥拉",
+          "Albania": "阿尔巴尼亚",
+          "United Arab Emirates": "阿联酋",
+          "Argentina": "阿根廷",
+          "Armenia": "亚美尼亚",
+          "French Southern and Antarctic Lands": "法属南半球和南极领地",
+          "Australia": "澳大利亚",
+          "Austria": "奥地利",
+          "Azerbaijan": "阿塞拜疆",
+          "Burundi": "布隆迪",
+          "Belgium": "比利时",
+          "Benin": "贝宁",
+          "Burkina Faso": "布基纳法索",
+          "Bangladesh": "孟加拉国",
+          "Bulgaria": "保加利亚",
+          "The Bahamas": "巴哈马",
+          "Bosnia and Herzegovina": "波黑",
+          "Belarus": "白俄罗斯",
+          "Belize": "伯利兹",
+          "Bermuda": "百慕大",
+          "Bolivia": "玻利维亚",
+          "Brazil": "巴西",
+          "Brunei": "文莱",
+          "Bhutan": "不丹",
+          "Botswana": "博茨瓦纳",
+          "Central African Republic": "中非共和国",
+          "Canada": "加拿大",
+          "Switzerland": "瑞士",
+          "Chile": "智利",
+          "China": "中国",
+          "Ivory Coast": "象牙海岸",
+          "Cameroon": "喀麦隆",
+          "Democratic Republic of the Congo": "刚果（金）",
+          "Republic of the Congo": "刚果（布）",
+          "Colombia": "哥伦比亚",
+          "Costa Rica": "哥斯达黎加",
+          "Cuba": "古巴",
+          "Northern Cyprus": "北塞浦路斯",
+          "Cyprus": "塞浦路斯",
+          "Czech Republic": "捷克",
+          "Germany": "德国",
+          "Djibouti": "吉布提",
+          "Denmark": "丹麦",
+          "Dominican Republic": "多米尼加共和国",
+          "Algeria": "阿尔及利亚",
+          "Ecuador": "厄瓜多尔",
+          "Egypt": "埃及",
+          "Eritrea": "厄立特里亚",
+          "Spain": "西班牙",
+          "Estonia": "爱沙尼亚",
+          "Ethiopia": "埃塞俄比亚",
+          "Finland": "芬兰",
+          "Fiji": "斐",
+          "Falkland Islands": "福克兰群岛",
+          "France": "法国",
+          "Gabon": "加蓬",
+          "United Kingdom": "英国",
+          "Georgia": "格鲁吉亚",
+          "Ghana": "加纳",
+          "Guinea": "几内亚",
+          "Gambia": "冈比亚",
+          "Guinea Bissau": "几内亚比绍",
+          "Equatorial Guinea": "赤道几内亚",
+          "Greece": "希腊",
+          "Greenland": "格陵兰",
+          "Guatemala": "危地马拉",
+          "French Guiana": "法属圭亚那",
+          "Guyana": "圭亚那",
+          "Honduras": "洪都拉斯",
+          "Croatia": "克罗地亚",
+          "Haiti": "海地",
+          "Hungary": "匈牙利",
+          "Indonesia": "印度尼西亚",
+          "India": "印度",
+          "Ireland": "爱尔兰",
+          "Iran": "伊朗",
+          "Iraq": "伊拉克",
+          "Iceland": "冰岛",
+          "Israel": "以色列",
+          "Italy": "意大利",
+          "Jamaica": "牙买加",
+          "Jordan": "约旦",
+          "Japan": "日本",
+          "Kazakhstan": "哈萨克斯坦",
+          "Kenya": "肯尼亚",
+          "Kyrgyzstan": "吉尔吉斯斯坦",
+          "Cambodia": "柬埔寨",
+          "South Korea": "韩国",
+          "Kosovo": "科索沃",
+          "Kuwait": "科威特",
+          "Laos": "老挝",
+          "Lebanon": "黎巴嫩",
+          "Liberia": "利比里亚",
+          "Libya": "利比亚",
+          "Sri Lanka": "斯里兰卡",
+          "Lesotho": "莱索托",
+          "Lithuania": "立陶宛",
+          "Luxembourg": "卢森堡",
+          "Latvia": "拉脱维亚",
+          "Morocco": "摩洛哥",
+          "Moldova": "摩尔多瓦",
+          "Madagascar": "马达加斯加",
+          "Mexico": "墨西哥",
+          "Macedonia": "马其顿",
+          "Mali": "马里",
+          "Myanmar": "缅甸",
+          "Montenegro": "黑山",
+          "Mongolia": "蒙古",
+          "Mozambique": "莫桑比克",
+          "Mauritania": "毛里塔尼亚",
+          "Malawi": "马拉维",
+          "Malaysia": "马来西亚",
+          "Namibia": "纳米比亚",
+          "New Caledonia": "新喀里多尼亚",
+          "Niger": "尼日尔",
+          "Nigeria": "尼日利亚",
+          "Nicaragua": "尼加拉瓜",
+          "Netherlands": "荷兰",
+          "Norway": "挪威",
+          "Nepal": "尼泊尔",
+          "New Zealand": "新西兰",
+          "Oman": "阿曼",
+          "Pakistan": "巴基斯坦",
+          "Panama": "巴拿马",
+          "Peru": "秘鲁",
+          "Philippines": "菲律宾",
+          "Papua New Guinea": "巴布亚新几内亚",
+          "Poland": "波兰",
+          "Puerto Rico": "波多黎各",
+          "North Korea": "朝鲜",
+          "Portugal": "葡萄牙",
+          "Paraguay": "巴拉圭",
+          "Qatar": "卡塔尔",
+          "Romania": "罗马尼亚",
+          "Russia": "俄罗斯",
+          "Rwanda": "卢旺达",
+          "Western Sahara": "西撒哈拉",
+          "Saudi Arabia": "沙特阿拉伯",
+          "Sudan": "苏丹",
+          "South Sudan": "南苏丹",
+          "Senegal": "塞内加尔",
+          "Solomon Islands": "所罗门群岛",
+          "Sierra Leone": "塞拉利昂",
+          "El Salvador": "萨尔瓦多",
+          "Somaliland": "索马里兰",
+          "Somalia": "索马里",
+          "Republic of Serbia": "塞尔维亚",
+          "Suriname": "苏里南",
+          "Slovakia": "斯洛伐克",
+          "Slovenia": "斯洛文尼亚",
+          "Sweden": "瑞典",
+          "Swaziland": "斯威士兰",
+          "Syria": "叙利亚",
+          "Chad": "乍得",
+          "Togo": "多哥",
+          "Thailand": "泰国",
+          "Tajikistan": "塔吉克斯坦",
+          "Turkmenistan": "土库曼斯坦",
+          "East Timor": "东帝汶",
+          "Trinidad and Tobago": "特里尼达和多巴哥",
+          "Tunisia": "突尼斯",
+          "Turkey": "土耳其",
+          "United Republic of Tanzania": "坦桑尼亚",
+          "Uganda": "乌干达",
+          "Ukraine": "乌克兰",
+          "Uruguay": "乌拉圭",
+          "United States of America": "美国",
+          "Uzbekistan": "乌兹别克斯坦",
+          "Venezuela": "委内瑞拉",
+          "Vietnam": "越南",
+          "Vanuatu": "瓦努阿图",
+          "West Bank": "西岸",
+          "Yemen": "也门",
+          "South Africa": "南非",
+          "Zambia": "赞比亚",
+          "Zimbabwe": "津巴布韦",
+          "Singapore Rep.": "新加坡",
+          "Dominican Rep.": "多米尼加",
+          "Palestine": "巴勒斯坦",
+          "Bahamas": "巴哈马",
+          "Timor-Leste": "东帝汶",
+          "Guinea-Bissau": "几内亚比绍",
+          "Côte d'Ivoire": "科特迪瓦",
+          "Siachen Glacier": "锡亚琴冰川",
+          "Br. Indian Ocean Ter.": "英属印度洋领土",
+          "Bosnia and Herz.": "波斯尼亚和黑塞哥维那",
+          "Central African Rep.": "中非",
+          "Dem. Rep. Congo": "刚果民主共和国",
+          "Congo": "刚果",
+          "N. Cyprus": "北塞浦路斯",
+          "Czech Rep.": "捷克",
+          "Eq. Guinea": "赤道几内亚",
+          "Korea": "韩国",
+          "Lao PDR": "老挝",
+          "Dem. Rep. Korea": "朝鲜",
+          "W. Sahara": "西撒哈拉",
+          "S. Sudan": "南苏丹",
+          "Solomon Is.": "所罗门群岛",
+          "Serbia": "塞尔维亚",
+          "Tanzania": "坦桑尼亚",
+          "United States": "美国"
+       */
+       var myChart = echarts.init(document.querySelector(".column .map .chart"));
+        //注册
+        //这里加true是为了让地图重新绘制，不然如果你有筛选的时候地图会飞出去
+       function world_map() {
+           option = {
+            tooltip: {
+                trigger: 'item',
+                formatter: function(params, ticket, callback) {
+                        return params.data.name + "<br />" + "累计确诊" + "：" + params.data.value +
+                            "<br />" + "累计治愈" + "：" + params.data.heal + "<br />" + "累计死亡" + "：" + params.data.dead
+                }
+            },
+            dataRange: {
+                left: 26,
+                bottom: 280,
+                min: 0,
+                max: 2500000,
+                text: ['High', 'Low'],
+                realtime: false,
+                calculable: true,
+                color: ['orangered', 'yellow', 'lightskyblue']
+            },
+            series: [{
+                name: 'World Population (2010)',
+                type: 'map',
+                mapType: 'world',
+                roam: true,
+                zoom: 1.1, //缩放比例
+                top: 60,
+                mapLocation: {
+                    y: 100
+                },
+                itemStyle: {
+                    emphasis: {
+                        label: {
+                            show: true
+                        }
+                    }
+                },
+                data: [
+                ]
+            }]
+        };
+        myChart.setOption(option,true);
+        window.addEventListener("resize", function() {
+            myChart.resize();
+        });
+       }
+       world_map();
+       get_all_world_data();
+    </script>
+    <script>
+        var btn = document.getElementById("query2");
+        btn.onclick = function() {
+            var fromyear = document.getElementById("fromyear").value;
+            var fromday = document.getElementById("fromday").value;
+            var frommounth = document.getElementById("frommounth").value;
+            var toyear = document.getElementById("toyear").value;
+            var today = document.getElementById("today").value;
+            var tomounth = document.getElementById("tomounth").value;
+            var continent = document.getElementById("continent").value;
+            var country = document.getElementById("country").value;
+            var province = document.getElementById("province").value;
+            var city = document.getElementById("city").value;
+            $.ajax({
+                url: "/query2",
+                data: {
+                    fromyear: fromyear, fromday: fromday, frommounth: frommounth,
+                    toyear: toyear, today: today, tomounth: tomounth,
+                    continent: continent, country: country, province: province, city: city
+                },
+                success: function (data) {
+                    if (province != "" || city != "" || country == "中国") {
+                        if (city != "" || province != "") {
+                            appendHtmlHead = "<tr><th>日期</th>" +
+                                "<th>省份</th>" +
+                                "<th>市区</th>" +
+                                "<th>累计确诊</th>" +
+                                "<th>累计治愈</th>" +
+                                "<th>累计死亡</th>" +
+                                "<th>现有确诊</th><tr>"
+                            $(".map-table thead").empty();
+                            $(".map-table thead").append(appendHtmlHead);
+                            $(".map-table tbody").empty();
+                            for (var i = 0; i < data.data.length; i++) {
+                                var Day = data.data[i][0].split(' ')
+                                appendHtmlBody = "<tr><td>" +
+                                    Day[3] + Day[2] + Day[1] + "</td><td>" +
+                                    data.data[i][1] + "</td><td>" +
+                                    data.data[i][2] + "</td><td>" +
+                                    data.data[i][3] + "</td><td>" +
+                                    data.data[i][4] + "</td><td>" +
+                                    data.data[i][5] + "</td><td>" +
+                                    (data.data[i][3] - data.data[i][4] - data.data[i][5]) + "</td><tr>"
+                                $(".map-table tbody").append(appendHtmlBody);
+                            }
+                        }
+                        if (country == "中国" && province == "" && city == "") {
+                            appendHtmlHead = "<tr><th>日期</th>" +
+                                "<th>省份</th>" +
+                                "<th>累计确诊</th>" +
+                                "<th>累计治愈</th>" +
+                                "<th>累计死亡</th>" +
+                                "<th>现有确诊</th></tr>"
+                            $(".map-table thead").empty();
+                            $(".map-table thead").append(appendHtmlHead);
+                            $(".map-table tbody").empty();
+                            for (var i = 0; i < data.data.length; i++) {
+                                var Day = data.data[i][0].split(' ')
+                                appendHtmlBody = "<tr><td>" +
+                                    Day[3] + Day[2] + Day[1] + "</td><td>" +
+                                    data.data[i][1] + "</td><td>" +
+                                    data.data[i][2] + "</td><td>" +
+                                    data.data[i][3] + "</td><td>" +
+                                    data.data[i][4] + "</td><td>" +
+                                    (data.data[i][2] - data.data[i][3] - data.data[i][4]) + "</td></tr>"
+                                $(".map-table tbody").append(appendHtmlBody);
+                            }
+                        }
+                    }
+                    if (province == "" && city == "" && country != "中国") {
+                        appendHtmlHead = "<tr><th>日期</th>" +
+                            "<th>国家</th>" +
+                            "<th>累计确诊</th>" +
+                            "<th>累计治愈</th>" +
+                            "<th>累计死亡</th>" +
+                            "<th>现有确诊</th></tr>"
+                        $(".map-table thead").empty();
+                        $(".map-table thead").append(appendHtmlHead);
+                        $(".map-table tbody").empty();
+                        for (var i = 0; i < data.data.length; i++) {
+                            var Day = data.data[i][0].split(' ')
+                            appendHtmlBody = "<tr><td>" +
+                                Day[3] + Day[2] + Day[1] + "</td><td>" +
+                                data.data[i][1] + "</td><td>" +
+                                data.data[i][2] + "</td><td>" +
+                                data.data[i][3] + "</td><td>" +
+                                data.data[i][4] + "</td><td>" +
+                                data.data[i][5] + "</td></tr>"
+                            $(".map-table tbody").append(appendHtmlBody);
+                        }
+                    }
+                    if (data.data == "") {
+                        alert("暂无数据")
+                    }
+                    $(".map-table tbody").find('tr').on('mouseenter',function(){
+                        var hang = $(this).prevAll().length;
+                        if(province != "" || city != "" || country == "中国"){
+                            myChart.dispatchAction({ type: 'highlight', name:add_name(data.data[hang][1])});
+                        }
+                        if(province == "" && city == "" && country != "中国"){
+                            myChart.dispatchAction({ type: 'highlight', name:trans_world(data.data[hang][1])});
+                        }
+                        //选中高亮
+                    })
+                    // 鼠标移出的第几行数据
+                    $(".map-table tbody").find('tr').on('mouseleave',function(){
+                         var hang = $(this).prevAll().length;
+                         if(province != "" || city != "" || country == "中国"){
+                             myChart.dispatchAction({ type: 'downplay', name:add_name(data.data[hang][1])});
+                         }
+                          if(province == "" && city == "" && country != "中国"){
+                            myChart.dispatchAction({ type: 'downplay', name:trans_world(data.data[hang][1])});
+                        }
+                         //取消高亮
+                     })
+                    myChart.on('mouseOver', function(params){
+                         console.log(params);//此处写点击事件内容
+                         if(province != "" || city != "" || country == "中国") {
+                             for(var i=0;i<data.data.length;i++){
+                             // data11[i].value="0";
+                                 if(del_name(params.name) == data.data[i][1]){
+                                     console.log(params.name);
+                                     //addressList[i].value="1";
+                                     // 选中高亮
+                                     myChart.dispatchAction({ type: 'highlight', name:params.name});
+                                     $(".map-table tbody tr").eq(i).addClass('highTr');
+                                 }
+                             }
+                         }
+                         if(province == "" && city == "" && country != "中国") {
+                             for(var i=0;i<data.data.length;i++){
+                             // data11[i].value="0";
+                                 if(del_world(params.name) == data.data[i][1]){
+                                     console.log(params.name);
+                                     //addressList[i].value="1";
+                                     // 选中高亮
+                                     myChart.dispatchAction({ type: 'highlight', name:params.name});
+                                     $(".map-table tbody tr").eq(i).addClass('highTr');
+                                 }
+                             }
+                         }
+                     });
+                    //  移出该区域时，取消高亮
+                    myChart.on('mouseOut', function(params){
+                        console.log(params);//此处写点击事件内容
+                        if(province != "" || city != "" || country == "中国") {
+                            for(var i=0;i<data.data.length;i++){
+                            // data11[i].value="0";
+                                if(del_name(params.name) == data.data[i][1]){
+                                    console.log(params.name);
+                                    //取消高亮
+                                    myChart.dispatchAction({ type: 'downplay', name:params.name});
+                                    $(".map-table tbody tr").eq(i).removeClass('highTr');
+                                }
+                            }
+                        }
+                        if(province == "" && city == "" && country != "中国") {
+                             for(var i=0;i<data.data.length;i++){
+                             // data11[i].value="0";
+                                 if(del_world(params.name) == data.data[i][1]){
+                                     console.log(params.name);
+                                     //addressList[i].value="1";
+                                     // 选中高亮
+                                     myChart.dispatchAction({ type: 'downplay', name:params.name});
+                                     $(".map-table tbody tr").eq(i).removeClass('highTr');
+                                 }
+                             }
+                         }
+                    });
+                },
+                error: function (xhr, type, errorThrown) {
+                }
+            })
+        }
+        function onclick_world(){
+            myChart.on('click',function(params){
+                if(params.name=="China"){
+                    china_map();
+                }
+            })
+        }
+        function trans_world(name){
+            if(name=="阿富汗"){
+                return "Afghanistan"
+            }
+            if(name=="安哥拉"){
+                return "Angola"
+            }
+            if(name=="阿尔巴尼亚"){
+                return "Albania"
+            }
+            if(name=="阿联酋"){
+                return "United Arab Emirates"
+            }
+            if(name=="阿根廷"){
+                return "Argentina"
+            }
+            if(name=="亚美尼亚"){
+                return "Armenia"
+            }
+            if(name=="法属南半球和南极领地"){
+                return "French Southern and Antarctic Lands"
+            }
+            if(name=="澳大利亚") {
+                return "Australia"
+            }
+            if(name=="奥地利"){
+                return "Austria"
+            }
+            if(name=="阿塞拜疆"){
+                return "Azerbaijan"
+            }
+            if(name=="布隆迪"){
+                return "Burundi"
+            }
+            if(name=="比利时"){
+                return "Belgium"
+            }
+            if(name=="贝宁") {
+                return "Benin"
+            }
+            if(name=="布基纳法索") {
+                return "Burkina Faso"
+            }
+            if(name=="孟加拉国"){
+                return "Bangladesh"
+            }
+            if(name=="保加利亚"){
+                 return "Bulgaria"
+            }
+            if(name=="巴哈马") {
+                return "The Bahamas"
+            }
+            if(name=="波黑"){
+                return "Bosnia and Herz."
+            }
+            if(name=="白俄罗斯"){
+                 return "Belarus"
+            }
+            if(name=="伯利兹"){
+                return "Belize"
+            }
+            if(name=="百慕大"){
+                return "Bermuda"
+            }
+            if(name=="玻利维亚"){
+                return "Bolivia"
+            }
+            if(name=="巴西") {
+                return "Brazil"
+            }
+            if(name=="文莱"){
+                return "Brunei"
+            }
+            if(name=="不丹"){
+                return "Bhutan"
+            }
+            if(name=="博茨瓦纳"){
+                return "Botswana"
+            }
+            if(name=="加拿大"){
+                return "Canada"
+            }
+            if(name=="瑞士") {
+                return "Switzerland"
+            }
+            if(name=="智利") {
+                return "Chile"
+            }
+            if(name=="中国"){
+                return "China"
+            }
+            if(name=="象牙海岸"){
+                return "Ivory Coast"
+            }
+            if(name=="喀麦隆"){
+                return "Cameroon"
+            }
+            if(name=="刚果（金）"){
+                return "Dem. Rep. Congo"
+            }
+            if(name=="刚果（布）"){
+                return "Congo"
+            }
+            if(name=="哥伦比亚"){
+                return "Colombia"
+            }
+            if(name=="哥斯达黎加"){
+                return "Costa Rica"
+            }
+            if(name=="古巴"){
+                return "Cuba"
+            }
+            if(name=="北塞浦路斯"){
+                return "Northern Cyprus"
+            }
+            if(name=="塞浦路斯"){
+                return "Cyprus"
+            }
+            if(name=="捷克"){
+                return "Czech Rep."
+            }
+            if(name=="德国"){
+                 return "Germany"
+            }
+            if(name=="吉布提"){
+                return "Djibouti"
+            }
+           if(name=="丹麦"){
+               return "Denmark"
+           }
+            if(name=="多米尼加共和国"){
+                return "Dominican Republic"
+            }
+           if(name=="阿尔及利亚"){
+               return "Algeria"
+           }
+            if(name=="厄瓜多尔"){
+                return "Ecuador"
+            }
+            if(name=="埃及"){
+                return "Egypt"
+            }
+            if(name=="厄立特里亚"){
+                return "Eritrea"
+            }
+           if(name=="西班牙"){
+               return "Spain"
+           }
+            if(name=="爱沙尼亚"){
+                return "Estonia"
+            }
+            if(name=="埃塞俄比亚"){
+                return "Ethiopia"
+            }
+            if(name=="芬兰"){
+                return "Finland"
+            }
+            if(name=="斐"){
+                return "Fiji"
+            }
+            if(name=="福克兰群岛"){
+                return "Falkland Islands"
+            }
+            if(name=="法国"){
+                return "France"
+            }
+            if(name=="加蓬"){
+                return "Gabon"
+            }
+            if(name=="英国"){
+                return "United Kingdom"
+            }
+            if(name=="格鲁吉亚"){
+                return "Georgia"
+            }
+            if(name=="加纳"){
+                return "Ghana"
+            }
+            if(name=="几内亚"){
+                return "Guinea"
+            }
+            if(name=="冈比亚"){
+                return "Gambia"
+            }
+            if(name=="几内亚比绍"){
+                return "Guinea-Bissau"
+            }
+            if(name=="赤道几内亚"){
+                return "Eq. Guinea"
+            }
+            if(name=="希腊"){
+                return "Greece"
+            }
+            if(name=="格陵兰"){
+                return "Greenland"
+            }
+            if(name=="危地马拉"){
+                return "Guatemala"
+            }
+            if(name=="法属圭亚那"){
+                return "French Guiana"
+            }
+            if(name=="圭亚那"){
+                return "Guyana"
+            }
+            if(name=="洪都拉斯"){
+                return "Honduras"
+            }
+            if(name=="克罗地亚"){
+                return "Croatia"
+            }
+            if(name=="海地"){
+                return "Haiti"
+            }
+           if(name=="匈牙利"){
+               return "Hungary"
+           }
+            if(name=="印度尼西亚"){
+                return "Indonesia"
+            }
+            if(name=="印度"){
+                return "India"
+            }
+            if(name=="爱尔兰"){
+                return "Ireland"
+            }
+            if(name=="伊朗"){
+                return "Iran"
+            }
+            if(name=="伊拉克"){
+                return "Iraq"
+            }
+            if(name=="冰岛"){
+                return "Iceland"
+            }
+            if(name=="以色列"){
+                return "Israel"
+            }
+            if(name=="意大利"){
+                return "Italy"
+            }
+            if(name=="牙买加"){
+                return "Jamaica"
+            }
+            if(name=="约旦"){
+                return "Jordan"
+            }
+            if(name=="日本本土"){
+                return "Japan"
+            }
+            if(name=="哈萨克斯坦"){
+                return "Kazakhstan"
+            }
+            if(name=="肯尼亚"){
+                return "Kenya"
+            }
+            if(name=="吉尔吉斯斯坦"){
+                return "Kyrgyzstan"
+            }
+            if(name=="柬埔寨"){
+                return "Cambodia"
+            }
+            if(name=="科索沃"){
+                return "Kosovo"
+            }
+            if(name=="科威特"){
+                return "Kuwait"
+            }
+            if(name=="老挝"){
+                return "Laos"
+            }
+            if(name=="黎巴嫩"){
+                return "Lebanon"
+            }
+            if(name=="利比里亚"){
+                return "Liberia"
+            }
+            if(name=="利比亚"){
+                return "Libya"
+            }
+            if(name=="斯里兰卡"){
+                return "Sri Lanka"
+            }
+            if(name=="莱索托"){
+                return "Lesotho"
+            }
+            if(name=="立陶宛"){
+                return "Lithuania"
+            }
+            if(name=="卢森堡"){
+                return "Luxembourg"
+            }
+            if(name=="拉脱维亚"){
+                return "Latvia"
+            }
+            if(name=="摩洛哥"){
+                return "Morocco"
+            }
+            if(name=="摩尔多瓦"){
+                return "Moldova"
+            }
+            if(name=="马达加斯加"){
+                return "Madagascar"
+            }
+            if(name=="墨西哥"){
+                return "Mexico"
+            }
+            if(name=="北马其顿"){
+                return "Macedonia"
+            }
+            if(name=="马里"){
+                return "Mali"
+            }
+            if(name=="缅甸"){
+                return "Myanmar"
+            }
+            if(name=="黑山"){
+                return "Montenegro"
+            }
+            if(name=="蒙古"){
+                return "Mongolia"
+            }
+            if(name=="莫桑比克"){
+                return "Mozambique"
+            }
+            if(name=="毛里塔尼亚"){
+                return "Mauritania"
+            }
+            if(name=="马拉维"){
+                return "Malawi"
+            }
+            if(name=="马来西亚"){
+                return "Malaysia"
+            }
+            if(name=="纳米比亚"){
+                return "Namibia"
+            }
+            if(name=="新喀里多尼亚"){
+                return "New Caledonia"
+            }
+            if(name=="尼日尔"){
+                return "Niger"
+            }
+            if(name=="尼日利亚"){
+                return "Nigeria"
+            }
+            if(name=="尼加拉瓜"){
+                return "Nicaragua"
+            }
+            if(name=="荷兰"){
+                return "Netherlands"
+            }
+            if(name=="挪威"){
+                return "Norway"
+            }
+            if(name=="尼泊尔"){
+                return "Nepal"
+            }
+            if(name=="新西兰"){
+                return "New Zealand"
+            }
+            if(name=="阿曼"){
+                return "Oman"
+            }
+            if(name=="巴基斯坦"){
+                return "Pakistan"
+            }
+            if(name=="巴拿马"){
+                return "Panama"
+            }
+           if(name=="秘鲁"){
+               return "Peru"
+           }
+            if(name=="菲律宾"){
+                return "Philippines"
+            }
+            if(name=="巴布亚新几内亚"){
+                return "Papua New Guinea"
+            }
+            if(name=="波兰"){
+                return  "Poland"
+            }
+            if(name=="波多黎各"){
+                return "Puerto Rico"
+            }
+            if(name=="葡萄牙"){
+                return "Portugal"
+            }
+            if(name=="巴拉圭"){
+                return "Paraguay"
+            }
+            if(name=="卡塔尔"){
+                return "Qatar"
+            }
+            if(name=="罗马尼亚"){
+                return "Romania"
+            }
+            if(name=="俄罗斯"){
+                return "Russia"
+            }
+            if(name=="卢旺达"){
+                return "Rwanda"
+            }
+            if(name=="西撒哈拉"){
+                return "W. Sahara"
+            }
+            if(name=="沙特阿拉伯"){
+                return "Saudi Arabia"
+            }
+            if(name=="苏丹"){
+                return "Sudan"
+            }
+            if(name=="南苏丹"){
+                return "South Sudan"
+            }
+            if(name=="塞内加尔"){
+                return "Senegal"
+            }
+            if(name=="所罗门群岛"){
+                return "Solomon Islands"
+            }
+            if(name=="塞拉利昂"){
+                return "Sierra Leone"
+            }
+            if(name=="萨尔瓦多"){
+                return "El Salvador"
+            }
+            if(name=="索马里兰"){
+                return "Somaliland"
+            }
+            if(name=="索马里"){
+                return "Somalia"
+            }
+            if(name=="塞尔维亚"){
+                return "Serbia"
+            }
+            if(name=="苏里南"){
+                return "Suriname"
+            }
+            if(name=="斯洛伐克"){
+                return "Slovakia"
+            }
+            if(name=="斯洛文尼亚"){
+                return "Slovenia"
+            }
+            if(name=="瑞典"){
+                return "Sweden"
+            }
+            if(name=="斯威士兰"){
+                return "Swaziland"
+            }
+            if(name=="叙利亚"){
+                return "Syria"
+            }
+            if(name=="乍得"){
+                return "Chad"
+            }
+            if(name=="多哥"){
+                return "Togo"
+            }
+            if(name=="泰国"){
+                return "Thailand"
+            }
+            if(name=="塔吉克斯坦"){
+                return "Tajikistan"
+            }
+            if(name=="土库曼斯坦"){
+                return "Turkmenistan"
+            }
+            if(name=="东帝汶"){
+                return "East Timor"
+            }
+            if(name=="特里尼达和多巴哥"){
+                return "Trinidad and Tobago"
+            }
+            if(name=="突尼斯"){
+                return "Tunisia"
+            }
+            if(name=="土耳其"){
+                return "Turkey"
+            }
+            if(name=="乌干达"){
+                return "Uganda"
+            }
+            if(name=="乌克兰"){
+                return "Ukraine"
+            }
+            if(name=="乌拉圭"){
+                return "Uruguay"
+            }
+            if(name=="美国"){
+                return "United States"
+            }
+            if(name=="乌兹别克斯坦"){
+                return "Uzbekistan"
+            }
+            if(name=="委内瑞拉"){
+                return "Venezuela"
+            }
+            if(name=="越南"){
+                return "Vietnam"
+            }
+            if(name=="瓦努阿图"){
+                return  "Vanuatu"
+            }
+            if(name=="西岸"){
+                return "West Bank"
+            }
+            if(name=="也门"){
+                return "Yemen"
+            }
+            if(name=="南非"){
+                return "South Africa"
+            }
+            if(name=="赞比亚"){
+                return "Zambia"
+            }
+            if(name=="津巴布韦"){
+                return "Zimbabwe"
+            }
+            if(name=="新加坡"){
+                return "Singapore Rep."
+            }
+            if(name=="多米尼加"){
+                return "Dominican Rep."
+            }
+            if(name=="巴勒斯坦"){
+                return "Palestine"
+            }
+            if(name=="巴哈马"){
+                return "Bahamas"
+            }
+            if(name=="东帝汶"){
+                return "Timor-Leste"
+            }
+            if(name=="几内亚比绍"){
+                return "Guinea-Bissau"
+            }
+            if(name=="科特迪瓦"){
+                return "Côte d'Ivoire"
+            }
+            if(name=="锡亚琴冰川"){
+                return "Siachen Glacier"
+            }
+            if(name=="英属印度洋领土"){
+                return "Br. Indian Ocean Ter."
+            }
+            if(name=="波斯尼亚和黑塞哥维那"){
+                return "Bosnia and Herz."
+            }
+            if(name=="中非共和国"){
+                return "Central African Rep."
+            }
+            if(name=="北塞浦路斯"){
+                return "N. Cyprus"
+            }
+            if(name=="捷克"){
+                return "Czech Rep."
+            }
+            if(name=="韩国"){
+                return "Korea"
+            }
+            if(name=="老挝"){
+                return "Lao PDR"
+            }
+            if(name=="朝鲜"){
+                return "Dem. Rep. Korea"
+            }
+            if(name=="西撒哈拉"){
+                return "W. Sahara"
+            }
+            if(name=="南苏丹"){
+                return "S. Sudan"
+            }
+            if(name=="所罗门群岛"){
+                return "Solomon Is."
+            }
+            if(name=="塞尔维亚"){
+                return "Serbia"
+            }
+            if(name=="坦桑尼亚"){
+                return "Tanzania"
+            }
+            return ""
+        }
+        function del_world(name){
+            if(name=="Afghanistan"){
+                return "阿富汗"
+            }
+            if(name=="Angola"){
+                return "安哥拉"
+            }
+            if(name=="Albania"){
+                return "阿尔巴尼亚"
+            }
+            if(name=="United Arab Emirates"){
+                return "阿联酋"
+            }
+            if(name=="Argentina"){
+                return "阿根廷"
+            }
+            if(name=="Armenia"){
+                return "亚美尼亚"
+            }
+            if(name=="French Southern and Antarctic Lands"){
+                return "法属南半球和南极领地"
+            }
+            if(name=="Australia") {
+                return "澳大利亚"
+            }
+            if(name=="Austria"){
+                return "奥地利"
+            }
+            if(name=="Azerbaijan"){
+                return "阿塞拜疆"
+            }
+            if(name=="Burundi"){
+                return "布隆迪"
+            }
+            if(name=="Belgium"){
+                return "比利时"
+            }
+            if(name=="Benin") {
+                return "贝宁"
+            }
+            if(name=="Burkina Faso") {
+                return "布基纳法索"
+            }
+            if(name=="Bangladesh"){
+                return "孟加拉国"
+            }
+            if(name=="Bulgaria"){
+                 return "保加利亚"
+            }
+            if(name=="The Bahamas") {
+                return "巴哈马"
+            }
+            if(name=="Bosnia and Herz."){
+                return "波黑"
+            }
+            if(name=="Belarus"){
+                 return "白俄罗斯"
+            }
+            if(name=="Belize"){
+                return "伯利兹"
+            }
+            if(name=="Bermuda"){
+                return "百慕大"
+            }
+            if(name=="Bolivia"){
+                return "玻利维亚"
+            }
+            if(name=="Brazil") {
+                return "巴西"
+            }
+            if(name=="Brunei"){
+                return "文莱"
+            }
+            if(name=="Bhutan"){
+                return "不丹"
+            }
+            if(name=="Botswana"){
+                return "博茨瓦纳"
+            }
+            if(name=="Canada"){
+                return "加拿大"
+            }
+            if(name=="Switzerland") {
+                return "瑞士"
+            }
+            if(name=="Chile") {
+                return "智利"
+            }
+            if(name=="China"){
+                return "中国"
+            }
+            if(name=="Ivory Coast"){
+                return "象牙海岸"
+            }
+            if(name=="Cameroon"){
+                return "喀麦隆"
+            }
+            if(name=="Dem. Rep. Congo"){
+                return "刚果（金）"
+            }
+            if(name=="Congo"){
+                return "刚果（布）"
+            }
+            if(name=="Colombia"){
+                return "哥伦比亚"
+            }
+            if(name=="Costa Rica"){
+                return "哥斯达黎加"
+            }
+            if(name=="Cuba"){
+                return "古巴"
+            }
+            if(name=="Northern Cyprus"){
+                return "北塞浦路斯"
+            }
+            if(name=="Cyprus"){
+                return "塞浦路斯"
+            }
+            if(name=="Czech Rep."){
+                return "捷克"
+            }
+            if(name=="Germany"){
+                 return "德国"
+            }
+            if(name=="Djibouti"){
+                return "吉布提"
+            }
+           if(name=="Denmark"){
+               return "丹麦"
+           }
+            if(name=="Dominican Republic"){
+                return "多米尼加共和国"
+            }
+           if(name=="Algeria"){
+               return "阿尔及利亚"
+           }
+            if(name=="Ecuador"){
+                return "厄瓜多尔"
+            }
+            if(name=="Egypt"){
+                return "埃及"
+            }
+            if(name=="Eritrea"){
+                return "厄立特里亚"
+            }
+           if(name=="Spain"){
+               return "西班牙"
+           }
+            if(name=="Estonia"){
+                return "爱沙尼亚"
+            }
+            if(name=="Ethiopia"){
+                return "埃塞俄比亚"
+            }
+            if(name=="Finland"){
+                return "芬兰"
+            }
+            if(name=="Fiji"){
+                return "斐"
+            }
+            if(name=="Falkland Islands"){
+                return "福克兰群岛"
+            }
+            if(name=="France"){
+                return "法国"
+            }
+            if(name=="Gabon"){
+                return "加蓬"
+            }
+            if(name=="United Kingdom"){
+                return "英国"
+            }
+            if(name=="Georgia"){
+                return "格鲁吉亚"
+            }
+            if(name=="Ghana"){
+                return "加纳"
+            }
+            if(name=="Guinea"){
+                return "几内亚"
+            }
+            if(name=="Gambia"){
+                return "冈比亚"
+            }
+            if(name=="Guinea-Bissau"){
+                return "几内亚比绍"
+            }
+            if(name=="Eq. Guinea"){
+                return "赤道几内亚"
+            }
+            if(name=="Greece"){
+                return "希腊"
+            }
+            if(name=="Greenland"){
+                return "格陵兰"
+            }
+            if(name=="Guatemala"){
+                return "危地马拉"
+            }
+            if(name=="French Guiana"){
+                return "法属圭亚那"
+            }
+            if(name=="Guyana"){
+                return "圭亚那"
+            }
+            if(name=="Honduras"){
+                return "洪都拉斯"
+            }
+            if(name=="Croatia"){
+                return "克罗地亚"
+            }
+            if(name=="Haiti"){
+                return "海地"
+            }
+           if(name=="Hungary"){
+               return "匈牙利"
+           }
+            if(name=="Indonesia"){
+                return "印度尼西亚"
+            }
+            if(name=="India"){
+                return "印度"
+            }
+            if(name=="Ireland"){
+                return "爱尔兰"
+            }
+            if(name=="Iran"){
+                return "伊朗"
+            }
+            if(name=="Iraq"){
+                return "伊拉克"
+            }
+            if(name=="Iceland"){
+                return "冰岛"
+            }
+            if(name=="Israel"){
+                return "以色列"
+            }
+            if(name=="Italy"){
+                return "意大利"
+            }
+            if(name=="Jamaica"){
+                return "牙买加"
+            }
+            if(name=="Jordan"){
+                return "约旦"
+            }
+            if(name=="Japan"){
+                return "日本本土"
+            }
+            if(name=="Kazakhstan"){
+                return "哈萨克斯坦"
+            }
+            if(name=="Kenya"){
+                return "肯尼亚"
+            }
+            if(name=="Kyrgyzstan"){
+                return "吉尔吉斯斯坦"
+            }
+            if(name=="Cambodia"){
+                return "柬埔寨"
+            }
+            if(name=="Kosovo"){
+                return "科索沃"
+            }
+            if(name=="Kuwait"){
+                return "科威特"
+            }
+            if(name=="Laos"){
+                return "老挝"
+            }
+            if(name=="Lebanon"){
+                return "黎巴嫩"
+            }
+            if(name=="Liberia"){
+                return "利比里亚"
+            }
+            if(name=="Libya"){
+                return "利比亚"
+            }
+            if(name=="Sri Lanka"){
+                return "斯里兰卡"
+            }
+            if(name=="Lesotho"){
+                return "莱索托"
+            }
+            if(name=="Lithuania"){
+                return "立陶宛"
+            }
+            if(name=="Luxembourg"){
+                return "卢森堡"
+            }
+            if(name=="Latvia"){
+                return "拉脱维亚"
+            }
+            if(name=="Morocco"){
+                return "摩洛哥"
+            }
+            if(name=="Moldova"){
+                return "摩尔多瓦"
+            }
+            if(name=="Madagascar"){
+                return "马达加斯加"
+            }
+            if(name=="Mexico"){
+                return "墨西哥"
+            }
+            if(name=="Macedonia"){
+                return "北马其顿"
+            }
+            if(name=="Mali"){
+                return "马里"
+            }
+            if(name=="Myanmar"){
+                return "缅甸"
+            }
+            if(name=="Montenegro"){
+                return "黑山"
+            }
+            if(name=="Mongolia"){
+                return "蒙古"
+            }
+            if(name=="Mozambique"){
+                return "莫桑比克"
+            }
+            if(name=="Mauritania"){
+                return "毛里塔尼亚"
+            }
+            if(name=="Malawi"){
+                return "马拉维"
+            }
+            if(name=="Malaysia"){
+                return "马来西亚"
+            }
+            if(name=="Namibia"){
+                return "纳米比亚"
+            }
+            if(name=="New Caledonia"){
+                return "新喀里多尼亚"
+            }
+            if(name=="Niger"){
+                return "尼日尔"
+            }
+            if(name=="Nigeria"){
+                return "尼日利亚"
+            }
+            if(name=="Nicaragua"){
+                return "尼加拉瓜"
+            }
+            if(name=="Netherlands"){
+                return "荷兰"
+            }
+            if(name=="Norway"){
+                return "挪威"
+            }
+            if(name=="Nepal"){
+                return "尼泊尔"
+            }
+            if(name=="New Zealand"){
+                return "新西兰"
+            }
+            if(name=="Oman"){
+                return "阿曼"
+            }
+            if(name=="Pakistan"){
+                return "巴基斯坦"
+            }
+            if(name=="Panama"){
+                return "巴拿马"
+            }
+           if(name=="Peru"){
+               return "秘鲁"
+           }
+            if(name=="Philippines"){
+                return "菲律宾"
+            }
+            if(name=="Papua New Guinea"){
+                return "巴布亚新几内亚"
+            }
+            if(name=="Poland"){
+                return  "波兰"
+            }
+            if(name=="Puerto Rico"){
+                return "波多黎各"
+            }
+            if(name=="Portugal"){
+                return "葡萄牙"
+            }
+            if(name=="Paraguay"){
+                return "巴拉圭"
+            }
+            if(name=="Qatar"){
+                return "卡塔尔"
+            }
+            if(name=="Romania"){
+                return "罗马尼亚"
+            }
+            if(name=="Russia"){
+                return "俄罗斯"
+            }
+            if(name=="Rwanda"){
+                return "卢旺达"
+            }
+            if(name=="W. Sahara"){
+                return "西撒哈拉"
+            }
+            if(name=="Saudi Arabia"){
+                return "沙特阿拉伯"
+            }
+            if(name=="Sudan"){
+                return "苏丹"
+            }
+            if(name=="South Sudan"){
+                return "南苏丹"
+            }
+            if(name=="Senegal"){
+                return "塞内加尔"
+            }
+            if(name=="Solomon Islands"){
+                return "所罗门群岛"
+            }
+            if(name=="Sierra Leone"){
+                return "塞拉利昂"
+            }
+            if(name=="El Salvador"){
+                return "萨尔瓦多"
+            }
+            if(name=="Somaliland"){
+                return "索马里兰"
+            }
+            if(name=="Somalia"){
+                return "索马里"
+            }
+            if(name=="Serbia"){
+                return "塞尔维亚"
+            }
+            if(name=="Suriname"){
+                return "苏里南"
+            }
+            if(name=="Slovakia"){
+                return "斯洛伐克"
+            }
+            if(name=="Slovenia"){
+                return "斯洛文尼亚"
+            }
+            if(name=="Sweden"){
+                return "瑞典"
+            }
+            if(name=="Swaziland"){
+                return "斯威士兰"
+            }
+            if(name=="Syria"){
+                return "叙利亚"
+            }
+            if(name=="Chad"){
+                return "乍得"
+            }
+            if(name=="Togo"){
+                return "多哥"
+            }
+            if(name=="Thailand"){
+                return "泰国"
+            }
+            if(name=="Tajikistan"){
+                return "塔吉克斯坦"
+            }
+            if(name=="Turkmenistan"){
+                return "土库曼斯坦"
+            }
+            if(name=="East Timor"){
+                return "东帝汶"
+            }
+            if(name=="Trinidad and Tobago"){
+                return "特里尼达和多巴哥"
+            }
+            if(name=="Tunisia"){
+                return "突尼斯"
+            }
+            if(name=="Turkey"){
+                return "土耳其"
+            }
+            if(name=="Uganda"){
+                return "乌干达"
+            }
+            if(name=="Ukraine"){
+                return "乌克兰"
+            }
+            if(name=="Uruguay"){
+                return "乌拉圭"
+            }
+            if(name=="United States"){
+                return "美国"
+            }
+            if(name=="Uzbekistan"){
+                return "乌兹别克斯坦"
+            }
+            if(name=="Venezuela"){
+                return "委内瑞拉"
+            }
+            if(name=="Vietnam"){
+                return "越南"
+            }
+            if(name=="Vanuatu"){
+                return  "瓦努阿图"
+            }
+            if(name=="West Bank"){
+                return "西岸"
+            }
+            if(name=="Yemen"){
+                return "也门"
+            }
+            if(name=="South Africa"){
+                return "南非"
+            }
+            if(name=="Zambia"){
+                return "赞比亚"
+            }
+            if(name=="Zimbabwe"){
+                return "津巴布韦"
+            }
+            if(name=="Singapore Rep."){
+                return "新加坡"
+            }
+            if(name=="Dominican Rep."){
+                return "多米尼加"
+            }
+            if(name=="Palestine"){
+                return "巴勒斯坦"
+            }
+            if(name=="Bahamas"){
+                return "巴哈马"
+            }
+            if(name=="Timor-Leste"){
+                return "东帝汶"
+            }
+            if(name=="Guinea-Bissau"){
+                return "几内亚比绍"
+            }
+            if(name=="Côte d'Ivoire"){
+                return "科特迪瓦"
+            }
+            if(name=="Siachen Glacier"){
+                return "锡亚琴冰川"
+            }
+            if(name=="Br. Indian Ocean Ter."){
+                return "英属印度洋领土"
+            }
+            if(name=="Bosnia and Herz."){
+                return "波斯尼亚和黑塞哥维那"
+            }
+            if(name=="Central African Rep."){
+                return "中非共和国"
+            }
+            if(name=="N. Cyprus"){
+                return "北塞浦路斯"
+            }
+            if(name=="Czech Rep."){
+                return "捷克"
+            }
+            if(name=="Korea"){
+                return "韩国"
+            }
+            if(name=="Lao PDR"){
+                return "老挝"
+            }
+            if(name=="Dem. Rep. Korea"){
+                return "朝鲜"
+            }
+            if(name=="W. Sahara"){
+                return "西撒哈拉"
+            }
+            if(name=="S. Sudan"){
+                return "南苏丹"
+            }
+            if(name=="Solomon Is."){
+                return "所罗门群岛"
+            }
+            if(name=="Serbia"){
+                return "塞尔维亚"
+            }
+            if(name=="Tanzania"){
+                return "坦桑尼亚"
+            }
+            return ""
+        }
+        function add_name(name){
+            list=["北京","天津","上海","重庆"]
+            list2=["内蒙古","西藏"]
+            list3=["香港","澳门"]
+            list4=["河北","山西","辽宁","吉林","黑龙江","江苏","浙江","安徽","福建","江西",
+                "山东","河南","湖北","湖南","广东","海南","四川","贵州","云南",
+                "陕西","甘肃","青海","台湾"]
+            if(is_in(list,name)){
+                return name+"市"
+            }
+            if(is_in(list2,name)){
+                return name+"自治区"
+            }
+            if(name=="新疆") {
+                return "新疆维吾尔自治区"
+            }
+            if(name=="宁夏"){
+                return "宁夏回族自治区"
+            }
+            if(name=="广西"){
+                return "广西壮族自治区"
+            }
+            if( is_in(list3,name)){
+                return name+"特别行政区"
+            }
+            if(is_in(list4,name)){
+                return name+"省"
+            }
+        }
+        function del_name(name) {
+            list = ["北京市", "天津市", "上海市", "重庆市"]
+            list2 = ["内蒙古自治区", "西藏自治区"]
+            list5 = ["宁夏回族自治区", "广西壮族自治区"]
+            list3 = ["香港特别行政区", "澳门特别行政区"]
+            list4 = ["河北省", "山西省", "辽宁省", "吉林省", "黑龙江省", "江苏省", "浙江省", "安徽省", "福建省", "江西省",
+                "山东省", "河南省", "湖北省", "湖南省", "广东省", "海南省", "四川省", "贵州省", "云南省",
+                "陕西省", "甘肃省", "青海省", "台湾省"]
+            if (is_in(list,name)){
+                return name.substring(0,name.length-1)
+            }
+            if (is_in(list2,name)){
+                return name.substring(0,name.length-3)
+            }
+            if (is_in(list3,name)){
+                return name.substring(0,name.length-5)
+            }
+            if (is_in(list4,name)){
+                return name.substring(0,name.length-1)
+            }
+            if (is_in(list5,name)){
+                return name.substring(0,name.length-5)
+            }
+            if (name == "新疆维吾尔自治区"){
+                return "新疆"
+            }
+        }
+        function is_in(list,str){
+            for(var i=0;i<list.length;i++){
+                if(str==list[i]){
+                    return 1
+                }
+            }
+            return 0
+        }
+        function get_c1_data() {
+            $.ajax({
+                url:"/c1",
+                success:function(data){
+                    $("#main_confirm").text(data.confirm);
+                    $("#main_dead").text(data.dead);
+                    $("#main_heal").text(data.heal);
+                    $("#main_now").text(data.confirm-data.dead-data.heal);
+                },
+                error:function (xhr,type,errorThrown){
+
+                }
+            })
+        }
+        function get_world_c1_data() {
+            $.ajax({
+                url:"/world_c1",
+                success:function(data){
+                    $("#world_confirm").text(data.confirm);
+                    $("#world_dead").text(data.dead);
+                    $("#world_heal").text(data.heal);
+                    $("#world_now").text(data.nowConfirm);
+                },
+                error:function (xhr,type,errorThrown){
+
+                }
+            })
+        }
+        function get_world_bar_data(){
+            $.ajax({
+                url: "/world_bar",
+                success: function (data) {
+                    bar_option.xAxis[0].data=data.name;
+                    bar_option.series[0].data=data.value;
+                    bar.setOption(bar_option);
+                },
+                error: function (xhr, type, errorThrown) {
+                }
+            })
+        }
+        function get_all_world_data(){
+             $.ajax({
+                url: "/all_world_data",
+                success: function (data) {
+                    option.series[0].data=data.data;
+                    myChart.setOption(option);
+                },
+                error: function (xhr, type, errorThrown) {
+                }
+            })
+        }
+        get_c1_data()
+        get_world_c1_data()
+        get_all_world_data()
+        get_world_bar_data()
+        onclick_world()
+    </script>
+    <script>
+        var bar = echarts.init(document.querySelector(".mainbox .column .bar"));
+        bar_option = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow',
+                    textStyle: {
+                        color: '#fff',
+                        fontSize: '26'
+                    },
+                }
+            },
+            grid: {
+                top: 30,
+                left: 0,
+                bottom: 45,
+                right: 0
+            },
+            xAxis: [{
+                type: 'category',
+                axisTick: {
+                    show: false
+                },
+                axisLine: {
+                    show: false
+                },
+                axisLabel: {
+                    color: '#4D4D4D',
+                    fontSize: 14,
+                    margin: 21,
+                    fontWeight: 'bold'
+                },
+                data: ['第一周', '第二周', '第三周', '第四周', '第五周', '第六周', '第七周', '第八周']
+            }],
+            yAxis: [{
+                nameTextStyle: {
+                    color: '#808080',
+                    fontSize: 12,
+                    padding: [0, 0, 0, -5]
+                },
+                max: function(value) {
+                    if (value.max < 5) {
+                        return 5
+                    } else {
+                        return value.max
+                    }
+                },
+                type: 'value',
+                axisLine: {
+                    show: false
+                },
+                axisLabel: {
+                    color: '#808080',
+                    fontSize: 12,
+                    margin: 5
+                },
+                splitLine: {
+                    show: false
+                },
+                axisTick: {
+                    show: false
+                }
+            }],
+            series: [{
+                name: '确诊人数',
+                type: 'bar',
+                label: {
+                    show: true,
+                    position: 'top',
+                    fontSize: 14,
+                    color: '#3DC3F0',
+                    fontWeight: 'bold'
+                },
+                barMaxWidth: 60,
+                itemStyle: {
+                    color: {
+                        type: 'linear',
+                        x: 0,
+                        y: 0,
+                        x2: 0,
+                        y2: 1,
+                        colorStops: [{
+                            offset: 0,
+                            color: '#3DC3F0' // 0% 处的颜色
+                        }, {
+                            offset: 1,
+                            color: '#CCF2FF' // 100% 处的颜色
+                        }]
+                    }
+                },
+                data: [60, 110, 180, 100, 120, 80, 90, 60]
+            }]
+        };
+        bar.setOption(bar_option);
+        window.addEventListener("resize", function() {
+            bar.resize();
+        });
+    </script>
+</body>
+
+</html>
